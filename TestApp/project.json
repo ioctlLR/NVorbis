@@ -1,0 +1,16 @@
+﻿{
+  "dependencies": {
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
+        "OpenTK": "1.1.2349.61993",
+        "NAudio": "1.7.3",
+        "NAudio.Vorbis": "1.0.0"
+      }
+    }
+  },
+  "runtimes": {
+    "win": {}
+  }
+}

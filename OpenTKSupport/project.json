@@ -1,0 +1,14 @@
+﻿{
+  "dependencies": {
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
+        "OpenTK": "1.1.2349.61993"
+      }
+    }
+  },
+  "runtimes": {
+    "win": {}
+  }
+}

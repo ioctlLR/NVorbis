@@ -1,18 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{A372E591-DFEF-49C4-9C82-98C4361EFCCD}</ProjectGuid>
+    <ProjectGuid>{F6F1B618-B2E8-483F-8A12-849F4A17E3BA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NVorbis</RootNamespace>
     <AssemblyName>NVorbis</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,8 +25,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,24 +33,22 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\bin\NVorbis.XML</DocumentationFile>
-    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
+    <None Include="project.json" />
+    <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BufferedReadStream.cs" />
+    <Compile Include="DataPacket.cs" />
     <Compile Include="Huffman.cs" />
     <Compile Include="IContainerReader.cs" />
     <Compile Include="IPacketProvider.cs" />
+    <Compile Include="IVorbisStreamStatus.cs" />
     <Compile Include="Mdct.cs" />
     <Compile Include="NewStreamEventArgs.cs" />
     <Compile Include="Ogg\OggContainerReader.cs" />
-    <Compile Include="DataPacket.cs" />
-    <Compile Include="Ogg\OggCrc.cs">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="Ogg\OggCrc.cs" />
     <Compile Include="Ogg\OggPacket.cs" />
     <Compile Include="Ogg\OggPacketReader.cs" />
     <Compile Include="Ogg\OggPageFlags.cs" />
@@ -64,14 +63,10 @@
     <Compile Include="VorbisMode.cs" />
     <Compile Include="VorbisReader.cs" />
     <Compile Include="VorbisResidue.cs" />
-    <Compile Include="VorbisStreamDecoder.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="IVorbisStreamStatus.cs" />
+    <Compile Include="VorbisStreamDecoder.cs" />
     <Compile Include="VorbisTime.cs" />
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

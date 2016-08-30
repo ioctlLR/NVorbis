@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.IO;
-using System.Reflection;
 using NUnit.Framework;
 
 namespace UnitTests
@@ -87,7 +83,7 @@ namespace UnitTests
         MemoryStream _baseStream;
         TestHarness.BufferedReadStream _readBuffer;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Init()
         {
             _baseStream = new MemoryStream(4096);
@@ -120,7 +116,7 @@ namespace UnitTests
             }
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void TearDown()
         {
             _baseStream.Dispose();
