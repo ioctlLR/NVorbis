@@ -12,7 +12,6 @@ namespace NVorbis
     /// <summary>
     /// Event data for when a new logical stream is found in a container.
     /// </summary>
-    [Serializable]
     public class NewStreamEventArgs : EventArgs
     {
         /// <summary>

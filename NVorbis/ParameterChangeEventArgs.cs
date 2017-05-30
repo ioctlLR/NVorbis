@@ -6,16 +6,12 @@
  *                                                                          *
  ***************************************************************************/
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace NVorbis
 {
     /// <summary>
     /// Event data for when a logical stream has a parameter change.
     /// </summary>
-    [Serializable]
     public class ParameterChangeEventArgs : EventArgs
     {
         /// <summary>

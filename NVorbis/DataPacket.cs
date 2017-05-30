@@ -1,13 +1,12 @@
-﻿﻿/****************************************************************************
- * NVorbis                                                                  *
- * Copyright (C) 2014, Andrew Ward <afward@gmail.com>                       *
- *                                                                          *
- * See COPYING for license terms (Ms-PL).                                   *
- *                                                                          *
- ***************************************************************************/
+﻿/****************************************************************************
+* NVorbis                                                                  *
+* Copyright (C) 2014, Andrew Ward <afward@gmail.com>                       *
+*                                                                          *
+* See COPYING for license terms (Ms-PL).                                   *
+*                                                                          *
+***************************************************************************/
 using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace NVorbis
 {

@@ -6,7 +6,6 @@
  *                                                                          *
  ***************************************************************************/
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace NVorbis
@@ -23,7 +22,7 @@ namespace NVorbis
         StreamReadBuffer _buffer;
         long _readPosition;
         object _localLock = new object();
-        System.Threading.Thread _owningThread;
+        int _owningThreadId;
         int _lockCount;
 
         public BufferedReadStream(Stream baseStream)
@@ -69,7 +68,7 @@ namespace NVorbis
 
                 if (CloseBaseStream)
                 {
-                    _baseStream.Close();
+                    _baseStream.Dispose();
                 }
             }
         }
@@ -80,13 +79,13 @@ namespace NVorbis
             System.Threading.Monitor.Enter(_localLock);
             if (++_lockCount == 1)
             {
-                _owningThread = System.Threading.Thread.CurrentThread;
+                _owningThreadId = Environment.CurrentManagedThreadId;
             }
         }
 
         void CheckLock()
         {
-            if (_owningThread != System.Threading.Thread.CurrentThread)
+            if (_owningThreadId != Environment.CurrentManagedThreadId)
             {
                 throw new System.Threading.SynchronizationLockException();
             }
@@ -97,7 +96,7 @@ namespace NVorbis
             CheckLock();
             if (--_lockCount == 0)
             {
-                _owningThread = null;
+                _owningThreadId = 0;
             }
             System.Threading.Monitor.Exit(_localLock);
         }

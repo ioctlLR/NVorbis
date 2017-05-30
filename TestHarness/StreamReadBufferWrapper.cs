@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.IO;
-
-namespace NVorbis
+﻿namespace NVorbis
 {
     //public partial class StreamReadBuffer
     //{
@@ -13,7 +7,7 @@ namespace NVorbis
     //        get { return _baseOffset; }
     //        set { _baseOffset = value; }
     //    }
-        
+
     //    public int TestingDiscardCount
     //    {
     //        get { return _discardCount; }

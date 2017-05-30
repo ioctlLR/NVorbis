@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using NAudio.Vorbis;
 using System.Text;
 
 namespace TestApp
@@ -9,7 +7,7 @@ namespace TestApp
     {
         static void TestNAudio()
         {
-            using (var vorbis = new NVorbis.NAudioSupport.VorbisWaveReader(@"..\..\..\TestFiles\2test.ogg"))
+            using (var vorbis = new VorbisWaveReader(@"..\..\..\TestFiles\2test.ogg"))
             using (var converter = new NAudio.Wave.Wave32To16Stream(vorbis))
             {
                 NAudio.Wave.WaveFileWriter.CreateWaveFile(@"..\..\..\TestFiles\2test_naudio.wav", converter);
