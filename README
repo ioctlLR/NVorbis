@@ -121,3 +121,5 @@ History
 0.8.4 - 11/20/2014
 	* BugFix: Forward seeking when target page ends with partial packet should ignore partial packet
 	* Changed MDCT to be thread-safe
+
+Join the chat at https://gitter.im/ioctlLR/NVorbis
