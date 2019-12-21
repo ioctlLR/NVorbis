@@ -18,7 +18,6 @@ namespace NVorbis.Ogg
     {
         Crc _crc = new Crc();
         Stream _stream;
-        bool _closeOnDispose;
         Dictionary<int, PacketReader> _packetReaders;
         List<int> _disposedStreamSerials;
         long _nextPageOffset;
@@ -61,9 +60,12 @@ namespace NVorbis.Ogg
             _disposedStreamSerials = new List<int>();
 
             _stream = stream ?? throw new ArgumentNullException(nameof(stream));
-            _closeOnDispose = closeOnDispose;
-
             if (!_stream.CanSeek) throw new ArgumentException("The specified stream must be seek-able!", nameof(stream));
+
+            if (!closeOnDispose)
+            {
+                _stream = new IgnoreCloseStream(_stream);
+            }
         }
 
         /// <summary>
