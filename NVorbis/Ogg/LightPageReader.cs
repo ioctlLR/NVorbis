@@ -273,15 +273,6 @@ namespace NVorbis.Ogg
             return (dataStart, sizes.ToArray(), isCont);
         }
 
-        //internal int ReadByte(long offset)
-        //{
-        //    lock (_readLock)
-        //    {
-        //        _stream.Position = offset;
-        //        return _stream.ReadByte();
-        //    }
-        //}
-
         internal int Read(long offset, byte[] buffer, int index, int count)
         {
             lock (_readLock)

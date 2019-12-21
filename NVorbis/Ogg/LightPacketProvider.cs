@@ -101,6 +101,8 @@ namespace NVorbis.Ogg
                 {
                     // not a valid sequence number... just ignore it?
                 }
+
+                _isEndOfStream |= eos;
             }
         }
 
