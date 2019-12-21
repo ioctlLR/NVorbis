@@ -64,8 +64,7 @@ namespace NVorbis
         IPacketProvider _packetProvider;
         DataPacket _parameterChangePacket;
 
-        List<int> _pagesSeen;
-        int _lastPageSeen;
+        Dictionary<int, bool> _pagesSeen;
 
         bool _eosFound;
 
@@ -76,8 +75,7 @@ namespace NVorbis
             _packetProvider = packetProvider;
             _packetProvider.ParameterChange += SetParametersChanging;
 
-            _pagesSeen = new List<int>();
-            _lastPageSeen = -1;
+            _pagesSeen = new Dictionary<int, bool>();
         }
 
         internal bool TryInit()
@@ -204,7 +202,7 @@ namespace NVorbis
                 return false;
             }
 
-            if (!_pagesSeen.Contains((_lastPageSeen = packet.PageSequenceNumber))) _pagesSeen.Add(_lastPageSeen);
+            _pagesSeen[packet.PageSequenceNumber] = true;
 
             _glueBits += 56;
 
@@ -244,7 +242,7 @@ namespace NVorbis
                 return false;
             }
 
-            if (!_pagesSeen.Contains((_lastPageSeen = packet.PageSequenceNumber))) _pagesSeen.Add(_lastPageSeen);
+            _pagesSeen[packet.PageSequenceNumber] = true;
 
             _glueBits += 56;
 
@@ -270,7 +268,7 @@ namespace NVorbis
                 return false;
             }
 
-            if (!_pagesSeen.Contains((_lastPageSeen = packet.PageSequenceNumber))) _pagesSeen.Add(_lastPageSeen);
+            _pagesSeen[packet.PageSequenceNumber] = true;
 
             var bits = packet.BitsRead;
 
@@ -707,7 +705,7 @@ namespace NVorbis
                 }
 
                 // keep our page count in sync
-                if (!_pagesSeen.Contains((_lastPageSeen = packet.PageSequenceNumber))) _pagesSeen.Add(_lastPageSeen);
+                _pagesSeen[packet.PageSequenceNumber] = true;
 
                 // check for resync
                 if (packet.IsResync)
@@ -1030,7 +1028,7 @@ namespace NVorbis
 
         public int PagesRead
         {
-            get { return _pagesSeen.IndexOf(_lastPageSeen) + 1; }
+            get { return _pagesSeen.Count; }
         }
 
         public int TotalPages
