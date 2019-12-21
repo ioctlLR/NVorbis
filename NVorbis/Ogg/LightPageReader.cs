@@ -16,12 +16,14 @@ namespace NVorbis.Ogg
         private readonly byte[] _dataBuf = new byte[65052];
 
         private Stream _stream;
+        private bool _closeOnDispose;
         private readonly Func<LightPacketProvider, bool> _newStreamCallback;
         private long _nextPageOffset;
 
-        public LightPageReader(Stream stream, Func<LightPacketProvider, bool> newStreamCallback)
+        public LightPageReader(Stream stream, bool closeOnDispose, Func<LightPacketProvider, bool> newStreamCallback)
         {
             _stream = stream;
+            _closeOnDispose = closeOnDispose;
             _newStreamCallback = newStreamCallback;
         }
 
@@ -46,6 +48,7 @@ namespace NVorbis.Ogg
         }
 
         // global values
+        public int FoundStreams => _packetProviders.Count;
         public int[] FoundSerials => _packetProviders.Keys.ToArray();
         public int PageCount { get; private set; }
         public long ContainerBits { get; private set; }
@@ -297,7 +300,10 @@ namespace NVorbis.Ogg
             }
             _packetProviders.Clear();
 
-            _stream?.Dispose();
+            if (_closeOnDispose)
+            {
+                _stream?.Dispose();
+            }
             _stream = null;
         }
     }

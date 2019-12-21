@@ -47,14 +47,7 @@ namespace NVorbis.Ogg
             {
                 throw new ArgumentException("Stream must be seek-able!", nameof(stream));
             }
-            if (closeOnDispose)
-            {
-                _reader = new LightPageReader(stream, NewStreamCallback);
-            }
-            else
-            {
-                _reader = new LightPageReader(new IgnoreCloseStream(stream), NewStreamCallback);
-            }
+            _reader = new LightPageReader(stream, closeOnDispose, NewStreamCallback);
         }
 
         /// <summary>
@@ -76,10 +69,10 @@ namespace NVorbis.Ogg
             _reader.Lock();
             try
             {
-                var cnt = _reader.FoundSerials.Length;
+                var cnt = _reader.FoundStreams;
                 while (_reader.ReadNextPage())
                 {
-                    if (cnt < _reader.FoundSerials.Length)
+                    if (cnt < _reader.FoundStreams)
                     {
                         return true;
                     }

@@ -64,7 +64,7 @@ namespace NVorbis
         IPacketProvider _packetProvider;
         DataPacket _parameterChangePacket;
 
-        Dictionary<int, bool> _pagesSeen;
+        HashSet<int> _pagesSeen;
 
         bool _eosFound;
 
@@ -75,7 +75,7 @@ namespace NVorbis
             _packetProvider = packetProvider;
             _packetProvider.ParameterChange += SetParametersChanging;
 
-            _pagesSeen = new Dictionary<int, bool>();
+            _pagesSeen = new HashSet<int>();
         }
 
         internal bool TryInit()
@@ -202,7 +202,7 @@ namespace NVorbis
                 return false;
             }
 
-            _pagesSeen[packet.PageSequenceNumber] = true;
+            _pagesSeen.Add(packet.PageSequenceNumber);
 
             _glueBits += 56;
 
@@ -242,7 +242,7 @@ namespace NVorbis
                 return false;
             }
 
-            _pagesSeen[packet.PageSequenceNumber] = true;
+            _pagesSeen.Add(packet.PageSequenceNumber);
 
             _glueBits += 56;
 
@@ -268,7 +268,7 @@ namespace NVorbis
                 return false;
             }
 
-            _pagesSeen[packet.PageSequenceNumber] = true;
+            _pagesSeen.Add(packet.PageSequenceNumber);
 
             var bits = packet.BitsRead;
 
@@ -705,7 +705,7 @@ namespace NVorbis
                 }
 
                 // keep our page count in sync
-                _pagesSeen[packet.PageSequenceNumber] = true;
+                _pagesSeen.Add(packet.PageSequenceNumber);
 
                 // check for resync
                 if (packet.IsResync)

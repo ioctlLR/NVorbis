@@ -205,7 +205,6 @@ namespace NVorbis.Ogg
 
             // we can seek back to the first packet, but no further
             _packetIndex = Math.Max(0, pkt.Index - preRoll);
-            //_lastPacket = null;
         }
 
         public DataPacket GetPacket(int packetIndex)
