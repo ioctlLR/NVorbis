@@ -28,6 +28,7 @@ namespace NVorbis.Ogg
             {
                 _packetProvider.SetPacketGranuleInfo(Index, GranuleCount.Value, GranulePosition);
             }
+            _dataBuf = null;
         }
 
         internal int Index { get; }

@@ -9,7 +9,7 @@ namespace NVorbis.Ogg
     internal class LightPageReader : IDisposable
     {
         private readonly Dictionary<int, LightPacketProvider> _packetProviders = new Dictionary<int, LightPacketProvider>();
-        private readonly List<int> _ignoredSerials = new List<int>();
+        private readonly HashSet<int> _ignoredSerials = new HashSet<int>();
         private readonly Crc _crc = new Crc();
         private readonly object _readLock = new object();
         private readonly byte[] _headerBuf = new byte[282];
@@ -82,109 +82,54 @@ namespace NVorbis.Ogg
                     {
                         // cool, found it...
 
-                        // adjust our count to remove any preceding cruft
-                        cnt -= i;
-
-                        // note the file offset
-                        var pageOffset = _stream.Position - cnt;
-
-                        // move to the front of the buffer
+                        // move to the front of the buffer if not there already
                         if (i > 0)
                         {
                             Buffer.BlockCopy(_headerBuf, i, _headerBuf, 0, cnt);
                             WasteBits += i * 8;
                             IsResync = true;
+
+                            // adjust our count and index to match what we just did
+                            cnt -= i;
+                            i = 0;
                         }
+
+                        // note the file offset
+                        var pageOffset = _stream.Position - cnt;
 
                         // try to make sure we have enough in the buffer
                         cnt += _stream.Read(_headerBuf, cnt, _headerBuf.Length - cnt);
 
-                        // decode it!
-                        if (DecodeHeader())
+                        // try to load the page
+                        if (CheckPage(pageOffset, out var pktCnt, out var nextPageOffset))
                         {
-                            // we have a potentially good page... check the CRC
-                            var crc = BitConverter.ToUInt32(_headerBuf, 22);
-                            var segCount = _headerBuf[26];
-
-                            _crc.Reset();
-                            for (var j = 0; j < 22; j++)
-                            {
-                                _crc.Update(_headerBuf[j]);
-                            }
-                            _crc.Update(0);
-                            _crc.Update(0);
-                            _crc.Update(0);
-                            _crc.Update(0);
-                            _crc.Update(segCount);
-
-                            var dataLen = 0;
-                            short pktCnt = 0;
-                            for (var j = 0; j < segCount; j++)
-                            {
-                                var segLen = _headerBuf[27 + j];
-                                _crc.Update(segLen);
-                                dataLen += segLen;
-                                if (segLen < 255 || j == segCount - 1)
-                                {
-                                    if (segLen > 0)
-                                    {
-                                        ++pktCnt;
-                                    }
-                                }
-                            }
+                            // good packet!
                             PacketCount = pktCnt;
+                            _nextPageOffset = nextPageOffset;
 
-                            _stream.Position = pageOffset + 27 + segCount;
-
-                            if (_stream.Read(_dataBuf, 0, dataLen) < dataLen)
+                            // try to add it to the appropriate packet provider; if it returns false, we're ignoring the page's logical stream
+                            if (!AddPage())
                             {
-                                // we're going to assume this means the stream has ended
-                                _nextPageOffset = _stream.Position;
-                                return false;
+                                // we read a page, but it was for an ignored stream; try looking at the next page position
+                                _stream.Position = nextPageOffset;
+
+                                // the simplest way to do this is to jump to the outer loop and force a complete re-start of the process
+                                // reset ofs so we're at the beginning of the buffer again
+                                ofs = 0;
+                                // reset cnt so the move logic at the bottom of the outer loop doesn't run
+                                cnt = 0;
+
+                                // update WasteBits since we just threw away an entire page
+                                WasteBits += 8 * (nextPageOffset - pageOffset);
+
+                                // bail out to the outer loop
+                                break;
                             }
-                            for (var j = 0; j < dataLen; j++)
-                            {
-                                _crc.Update(_dataBuf[j]);
-                            }
-
-                            if (_crc.Test(crc))
-                            {
-                                _nextPageOffset = _stream.Position;
-                                PageOffset = pageOffset;
-                                PageCount++;
-                                ContainerBits += 8 * (27 + segCount);
-
-                                if (!_packetProviders.ContainsKey(StreamSerial))
-                                {
-                                    if (_ignoredSerials.Contains(StreamSerial))
-                                    {
-                                        // loop back to the next byte
-                                        i = 1;
-                                        continue;
-                                    }
-
-                                    var packetProvider = new LightPacketProvider(this);
-                                    _packetProviders.Add(StreamSerial, packetProvider);
-                                    if (!_newStreamCallback(packetProvider))
-                                    {
-                                        _packetProviders.Remove(StreamSerial);
-                                        _ignoredSerials.Add(StreamSerial);
-                                        packetProvider.Dispose();
-                                        i = 1;
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-                                    _packetProviders[StreamSerial].AddPage();
-                                }
-
-                                return true;
-                            }
+                            return true;
                         }
 
-                        // loop to the next byte
-                        i = 1;
+                        // meh, just reset the stream position to where it was before we tried that page
+                        _stream.Position = pageOffset + cnt;
                     }
                 }
 
@@ -210,6 +155,99 @@ namespace NVorbis.Ogg
             }
 
             return false;
+        }
+
+        private bool CheckPage(long pageOffset, out short packetCount, out long nextPageOffset)
+        {
+            if (DecodeHeader())
+            {
+                // we have a potentially good page... check the CRC
+                var crc = BitConverter.ToUInt32(_headerBuf, 22);
+                var segCount = _headerBuf[26];
+
+                _crc.Reset();
+                for (var j = 0; j < 22; j++)
+                {
+                    _crc.Update(_headerBuf[j]);
+                }
+                _crc.Update(0);
+                _crc.Update(0);
+                _crc.Update(0);
+                _crc.Update(0);
+                _crc.Update(segCount);
+
+                // while we're here, count up the number of packets in the page
+                var dataLen = 0;
+                short pktCnt = 0;
+                for (var j = 0; j < segCount; j++)
+                {
+                    var segLen = _headerBuf[27 + j];
+                    _crc.Update(segLen);
+                    dataLen += segLen;
+                    if (segLen < 255 || j == segCount - 1)
+                    {
+                        if (segLen > 0)
+                        {
+                            ++pktCnt;
+                        }
+                    }
+                }
+                packetCount = pktCnt;
+
+                // finish calculating the CRC
+                _stream.Position = pageOffset + 27 + segCount;
+                if (_stream.Read(_dataBuf, 0, dataLen) < dataLen)
+                {
+                    // we're going to assume this means the stream has ended
+                    nextPageOffset = 0;
+                    return false;
+                }
+                for (var j = 0; j < dataLen; j++)
+                {
+                    _crc.Update(_dataBuf[j]);
+                }
+
+                if (_crc.Test(crc))
+                {
+                    // cool, we have a valid page!
+                    nextPageOffset = _stream.Position;
+                    PageOffset = pageOffset;
+                    PageCount++;
+                    ContainerBits += 8 * (27 + segCount);
+                    return true;
+                }
+            }
+            packetCount = 0;
+            nextPageOffset = 0;
+            return false;
+        }
+
+        private bool AddPage()
+        {
+            if (!_packetProviders.ContainsKey(StreamSerial))
+            {
+                if (_ignoredSerials.Contains(StreamSerial))
+                {
+                    // nevermind... we're supposed to ignore these
+                    return false;
+                }
+
+                var packetProvider = new LightPacketProvider(this);
+                _packetProviders.Add(StreamSerial, packetProvider);
+                if (!_newStreamCallback(packetProvider))
+                {
+                    _packetProviders.Remove(StreamSerial);
+                    _ignoredSerials.Add(StreamSerial);
+                    packetProvider.Dispose();
+                    return false;
+                }
+            }
+            else
+            {
+                _packetProviders[StreamSerial].AddPage();
+            }
+
+            return true;
         }
 
         internal bool ReadPageAt(long offset)
@@ -244,12 +282,12 @@ namespace NVorbis.Ogg
             return false;
         }
 
-        internal (long DataStart, int[] Sizes, bool Continues) GetPackets()
+        internal List<Tuple<long, int>> GetPackets(out bool lastContinues)
         {
             var segCnt = _headerBuf[26];
-            var dataStart = PageOffset + 27 + segCnt;
-            var sizes = new List<int>(segCnt);
-            var isCont = false;
+            var dataOffset = PageOffset + 27 + segCnt;
+            var packets = new List<Tuple<long, int>>(segCnt);
+            lastContinues = false;
 
             if (segCnt > 0)
             {
@@ -261,19 +299,19 @@ namespace NVorbis.Ogg
                     {
                         if (size > 0)
                         {
-                            sizes.Add(size);
+                            packets.Add(new Tuple<long, int>(dataOffset, size));
+                            dataOffset += size;
                         }
                         size = 0;
                     }
                 }
                 if (size > 0)
                 {
-                    sizes.Add(size);
-                    isCont = true;
+                    packets.Add(new Tuple<long, int>(dataOffset, size));
+                    lastContinues = true;
                 }
             }
-
-            return (dataStart, sizes.ToArray(), isCont);
+            return packets;
         }
 
         internal int Read(long offset, byte[] buffer, int index, int count)

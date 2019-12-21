@@ -72,35 +72,29 @@ namespace NVorbis.Ogg
                     }
                 }
 
-                // verify the page sequence
-                if (_lastSeqNbr == 0 || _lastSeqNbr + 1 == _reader.SequenceNumber || _reader.IsResync)
+                if (_reader.IsResync || (_lastSeqNbr != 0 && _lastSeqNbr + 1 != _reader.SequenceNumber))
                 {
-                    // Add the reader's current page to the list
-
-                    if (_reader.IsResync)
-                    {
-                        _pageOffsets.Add(-_reader.PageOffset);
-                    }
-                    else
-                    {
-                        _pageOffsets.Add(_reader.PageOffset);
-                    }
-                    var pktCnt = _reader.PacketCount;
-                    if (isCont)
-                    {
-                        --pktCnt;
-                    }
-                    _pageGranules.Add(_reader.GranulePosition);
-                    _pagePacketCounts.Add(pktCnt);
-                    _pageContinuations.Add(isCont && !_reader.IsResync);
-                    _lastSeqNbr = _reader.SequenceNumber;
-
-                    _packetCount += pktCnt;
+                    // as a practical matter, if the sequence numbers are "wrong", our logical stream is now out of sync
+                    // so whether the page header sync was lost or we just got an out of order page / sequence jump, we're counting it as a resync
+                    _pageOffsets.Add(-_reader.PageOffset);
                 }
                 else
                 {
-                    // not a valid sequence number... just ignore it?
+                    _pageOffsets.Add(_reader.PageOffset);
                 }
+
+                var pktCnt = _reader.PacketCount;
+                if (isCont)
+                {
+                    --pktCnt;
+                }
+
+                _pageGranules.Add(_reader.GranulePosition);
+                _pagePacketCounts.Add(pktCnt);
+                _pageContinuations.Add(isCont && !_reader.IsResync);
+                _lastSeqNbr = _reader.SequenceNumber;
+
+                _packetCount += pktCnt;
 
                 _isEndOfStream |= eos;
             }
@@ -347,7 +341,8 @@ namespace NVorbis.Ogg
                 pageOffset *= -1;
             }
 
-            (long DataStart, int[] Sizes, bool Continues)? pktsDat = null;
+            List<Tuple<long, int>> pkts = null;
+            lastContinues = false;
             var seqNo = -1;
 
             _reader.Lock();
@@ -356,7 +351,7 @@ namespace NVorbis.Ogg
                 if (_reader.ReadPageAt(pageOffset))
                 {
                     seqNo = _reader.SequenceNumber;
-                    pktsDat = _reader.GetPackets();
+                    pkts = _reader.GetPackets(out lastContinues);
                 }
             }
             finally
@@ -364,15 +359,8 @@ namespace NVorbis.Ogg
                 _reader.Release();
             }
 
-            if (pktsDat.HasValue)
+            if (pkts != null)
             {
-                var pkts = new List<Tuple<long, int>>(pktsDat.Value.Sizes.Length);
-                var datOfs = pktsDat.Value.DataStart;
-                for (var i = 0; i < pktsDat.Value.Sizes.Length; i++)
-                {
-                    pkts.Add(new Tuple<long, int>(datOfs, pktsDat.Value.Sizes[i]));
-                    datOfs += pkts[pkts.Count - 1].Item2;
-                }
                 if (isResync && _pageContinuations[pageIndex])
                 {
                     pkts.RemoveAt(0);
@@ -380,13 +368,12 @@ namespace NVorbis.Ogg
                 _cachedPageSeqNo = pageSeqNo = seqNo;
                 _cachedIsResync = isResync;
                 _cachedPageIndex = pageIndex;
-                lastContinues = _cachedLastContinues = pktsDat.Value.Continues;
+                _cachedLastContinues = lastContinues;
                 return _cachedSegments = pkts;
             }
 
             pageSeqNo = -1;
             isResync = false;
-            lastContinues = false;
             return null;
         }
 
